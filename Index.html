@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Engaging Quiz App</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      max-width: 700px;
+      margin: 30px auto;
+      padding: 20px;
+      background: #e0f2fe;
+      color: #1e293b;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+      padding: 30px;
+      position: relative;
+    }
+    h1 {
+      text-align: center;
+      color: #1e40af;
+    }
+    h2 {
+      font-size: 22px;
+      margin-bottom: 20px;
+      color: #1e293b;
+    }
+    .options {
+      display: grid;
+      gap: 12px;
+    }
+    .option-btn {
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #f1f5f9;
+      transition: transform 0.2s, background 0.3s;
+    }
+    .option-btn:hover {
+      transform: scale(1.02);
+      background: #dbeafe;
+    }
+    .option-btn.correct {
+      background: #22c55e;
+      color: white;
+    }
+    .option-btn.wrong {
+      background: #ef4444;
+      color: white;
+    }
+    .info {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #4b5563;
+    }
+    .explanation {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #1e293b;
+      background: #f8fafc;
+      padding: 10px;
+      border-radius: 6px;
+    }
+    .hidden {
+      display: none;
+    }
+    .center {
+      text-align: center;
+    }
+    .restart-btn, .skip-btn, .start-btn {
+      margin: 10px;
+      padding: 12px 24px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .restart-btn:hover, .skip-btn:hover, .start-btn:hover {
+      background: #1e40af;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      background: #e5e7eb;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .progress {
+      height: 100%;
+      background: #3b82f6;
+      border-radius: 5px;
+      transition: width 0.3s;
+    }
+    .timer {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 16px;
+      color: #dc2626;
+    }
+    .subject-selection {
+      margin-bottom: 20px;
+    }
+    select {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .fade-in {
+      animation: fadeIn 0.5s;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div id="start-screen">
+      <h1>Welcome to the Quiz App!</h1>
+      <div class="subject-selection">
+        <label for="subject">Choose a Subject: </label>
+        <select id="subject">
+          <option value="all">All Subjects</option>
+          <option value="Science">Science</option>
+          <option value="History">History</option>
+          <option value="Geography">Geography</option>
+          <option value="Math">Math</option>
+          <option value="Literature">Literature</option>
+          <option value="General Knowledge">General Knowledge</option>
+        </select>
+      </div>
+      <button class="start-btn" onclick="startQuiz()">Start Quiz</button>
+    </div>
+
+    <div id="quiz" class="hidden">
+      <div class="progress-bar">
+        <div class="progress" id="progress"></div>
+      </div>
+      <div class="timer" id="timer">20s</div>
+      <h2 id="question">Question text here</h2>
+      <div id="options" class="options"></div>
+      <div id="info" class="info"></div>
+      <div id="explanation" class="explanation hidden"></div>
+      <button class="skip-btn" onclick="skipQuestion()">Skip</button>
+    </div>
+
+    <div id="result" class="center hidden">
+      <h2>Quiz Finished!</h2>
+      <p id="scoreText"></p>
+      <button class="restart-btn" onclick="restartQuiz()">Restart</button>
+    </div>
+  </div>
+
+  <script>
+    // Sample question bank (30 questions, 5 per subject)
+    const questionBank = {
+      Science: [
+        { question: "What is the chemical formula of water?", options: ["H2O", "CO2", "O2", "NaCl"], answer: 0, explanation: "Water is composed of two hydrogen atoms and one oxygen atom, hence H2O.", difficulty: "Easy" },
+        { question: "What planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter", "Saturn"], answer: 1, explanation: "Mars is called the Red Planet due to its reddish appearance caused by iron oxide (rust).", difficulty: "Easy" },
+        { question: "What is the powerhouse of the cell?", options: ["Nucleus", "Ribosome", "Mitochondria", "Chloroplast"], answer: 2, explanation: "Mitochondria produce energy (ATP) through cellular respiration.", difficulty: "Medium" },
+        { question: "What gas do plants absorb for photosynthesis?", options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Hydrogen"], answer: 1, explanation: "Plants use carbon dioxide from the air to produce glucose during photosynthesis.", difficulty: "Easy" },
+        { question: "What is the speed of light in a vacuum?", options: ["300,000 km/s", "150,000 km/s", "1,000 km/s", "3,000 km/s"], answer: 0, explanation: "The speed of light in a vacuum is approximately 299,792 km/s, rounded to 300,000 km/s.", difficulty: "Medium" }
+      ],
+      History: [
+        { question: "Who was the first President of the United States?", options: ["Abraham Lincoln", "George Washington", "Thomas Jefferson", "John Adams"], answer: 1, explanation: "George Washington served as the first U.S. President from 1789 to 1797.", difficulty: "Easy" },
+        { question: "In which year did World War II end?", options: ["1943", "1944", "1945", "1946"], answer: 2, explanation: "World War II ended in 1945 with the surrender of Japan.", difficulty: "Easy" },
+        { question: "Who discovered America in 1492?", options: ["Vasco da Gama", "Christopher Columbus", "Ferdinand Magellan", "Marco Polo"], answer: 1, explanation: "Christopher Columbus landed in the Americas in 1492, though he thought he reached Asia.", difficulty: "Easy" },
+        { question: "What was the name of the ship that carried the Pilgrims to America?", options: ["Santa Maria", "Mayflower", "Nina", "Pinta"], answer: 1, explanation: "The Mayflower carried the Pilgrims to Plymouth in 1620.", difficulty: "Medium" },
+        { question: "Which ancient civilization built the pyramids?", options: ["Mesopotamians", "Greeks", "Egyptians", "Romans"], answer: 2, explanation: "The ancient Egyptians built the pyramids as tombs for pharaohs.", difficulty: "Easy" }
+      ],
+      Geography: [
+        { question: "What is the largest continent?", options: ["Africa", "Asia", "Australia", "Europe"], answer: 1, explanation: "Asia is the largest continent by both area and population.", difficulty: "Easy" },
+        { question: "Which river is the longest in the world?", options: ["Amazon", "Nile", "Yangtze", "Mississippi"], answer: 1, explanation: "The Nile River in Africa is the longest, approximately 6,650 km.", difficulty: "Medium" },
+        { question: "What is the capital of Brazil?", options: ["Rio de Janeiro", "São Paulo", "Brasília", "Salvador"], answer: 2, explanation: "Brasília is the capital of Brazil, designed by Oscar Niemeyer.", difficulty: "Easy" },
+        { question: "Which desert is the largest in the world?", options: ["Sahara", "Gobi", "Kalahari", "Antarctic"], answer: 3, explanation: "The Antarctic Desert is the largest by area, though it’s a cold desert.", difficulty: "Hard" },
+        { question: "What is the highest mountain peak?", options: ["K2", "Kangchenjunga", "Everest", "Lhotse"], answer: 2, explanation: "Mount Everest is the highest peak, standing at 8,848 meters.", difficulty: "Easy" }
+      ],
+      Math: [
+        { question: "What is 12 × 12?", options: ["124", "134", "144", "154"], answer: 2, explanation: "12 × 12 = 144.", difficulty: "Easy" },
+        { question: "What is the value of π (pi) to two decimal places?", options: ["3.12", "3.14", "3.16", "3.18"], answer: 1, explanation: "Pi is approximately 3.14159, rounded to 3.14.", difficulty: "Easy" },
+        { question: "What is the square root of 16?", options: ["2", "3", "4", "5"], answer: 2, explanation: "The square root of 16 is 4, since 4 × 4 = 16.", difficulty: "Easy" },
+        { question: "What is 2^5?", options: ["16", "32", "64", "128"], answer: 1, explanation: "2^5 means 2 raised to the power of 5, which is 32.", difficulty: "Medium" },
+        { question: "What is the sum of angles in a triangle?", options: ["90°", "180°", "270°", "360°"], answer: 1, explanation: "The sum of interior angles in a triangle is always 180°.", difficulty: "Easy" }
+      ],
+      Literature: [
+        { question: "Who wrote 'Romeo and Juliet'?", options: ["Charles Dickens", "William Shakespeare", "Jane Austen", "Mark Twain"], answer: 1, explanation: "William Shakespeare wrote the famous tragedy 'Romeo and Juliet'.", difficulty: "Easy" },
+        { question: "What is the name of the wizard school in Harry Potter?", options: ["Hogwarts", "Beauxbatons", "Durmstrang", "Ilvermorny"], answer: 0, explanation: "Hogwarts is the primary setting for the Harry Potter series by J.K. Rowling.", difficulty: "Easy" },
+        { question: "Who wrote 'Pride and Prejudice'?", options: ["Charlotte Brontë", "Jane Austen", "Emily Dickinson", "Virginia Woolf"], answer: 1, explanation: "Jane Austen wrote 'Pride and Prejudice', published in 1813.", difficulty: "Easy" },
+        { question: "What is the first book in 'The Lord of the Rings' series?", options: ["The Two Towers", "The Fellowship of the Ring", "The Return of the King", "The Hobbit"], answer: 1, explanation: "'The Fellowship of the Ring' is the first book in the trilogy.", difficulty: "Medium" },
+        { question: "Who is the author of '1984'?", options: ["Aldous Huxley", "George Orwell", "Ray Bradbury", "Philip K. Dick"], answer: 1, explanation: "George Orwell wrote the dystopian novel '1984', published in 1949.", difficulty: "Easy" }
+      ],
+      "General Knowledge": [
+        { question: "What is the currency of Japan?", options: ["Yuan", "Yen", "Won", "Ringgit"], answer: 1, explanation: "The Yen is the official currency of Japan.", difficulty: "Easy" },
+        { question: "Which animal is known as man’s best friend?", options: ["Cat", "Dog", "Horse", "Rabbit"], answer: 1, explanation: "Dogs are often called man’s best friend due to their loyalty.", difficulty: "Easy" },
+        { question: "What is the smallest country in the world?", options: ["Monaco", "Vatican City", "San Marino", "Liechtenstein"], answer: 1, explanation: "Vatican City is the smallest country, with an area of about 44 hectares.", difficulty: "Medium" },
+        { question: "Which company created the iPhone?", options: ["Samsung", "Google", "Apple", "Microsoft"], answer: 2, explanation: "Apple Inc. designs and manufactures the iPhone.", difficulty: "Easy" },
+        { question: "What is the main ingredient in guacamole?", options: ["Tomato", "Avocado", "Onion", "Pepper"], answer: 1, explanation: "Avocado is the primary ingredient in guacamole.", difficulty: "Easy" }
+      ]
+    };
+
+    let questions = [];
+    let current = 0;
+    let score = 0;
+    let timer;
+    let timeLeft = 20; // 20 seconds per question
+    let selectedSubject = "all";
+    const maxQuestions = 20; // Limit quiz to 20 questions per session for engagement
+
+    const questionEl = document.getElementById("question");
+    const optionsEl = document.getElementById("options");
+    const infoEl = document.getElementById("info");
+    const explanationEl = document.getElementById("explanation");
+    const resultEl = document.getElementById("result");
+    const quizEl = document.getElementById("quiz");
+    const startScreenEl = document.getElementById("start-screen");
+    const scoreText = document.getElementById("scoreText");
+    const progressEl = document.getElementById("progress");
+    const timerEl = document.getElementById("timer");
+
+    function startQuiz() {
+      selectedSubject = document.getElementById("subject").value;
+      questions = generateQuestions();
+      startScreenEl.classList.add("hidden");
+      quizEl.classList.remove("hidden");
+      current = 0;
+      score = 0;
+      loadProgress();
+      showQuestion();
+    }
+
+    function generateQuestions() {
+      let pool = [];
+      if (selectedSubject === "all") {
+        Object.values(questionBank).forEach(subject => pool.push(...subject));
+      } else {
+        pool = [...questionBank[selectedSubject]];
+      }
+      // Shuffle and limit to maxQuestions
+      return pool.sort(() => Math.random() - 0.5).slice(0, maxQuestions);
+    }
+
+    function showQuestion() {
+      if (current >= questions.length) {
+        endQuiz();
+        return;
+      }
+      const q = questions[current];
+      questionEl.textContent = q.question;
+      optionsEl.innerHTML = "";
+      infoEl.textContent = `Question ${current + 1} of ${questions.length} | Difficulty: ${q.difficulty}`;
+      explanationEl.classList.add("hidden");
+      updateProgress();
+
+      q.options.forEach((opt, index) => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn fade-in";
+        btn.textContent = opt;
+        btn.onclick = () => handleAnswer(index, btn);
+        optionsEl.appendChild(btn);
+      });
+
+      // Start timer
+      timeLeft = 20;
+      timerEl.textContent = `${timeLeft}s`;
+      clearInterval(timer);
+      timer = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = `${timeLeft}s`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          handleAnswer(-1); // Treat as wrong answer
+        }
+      }, 1000);
+
+      // Save progress
+      saveProgress();
+    }
+
+    function handleAnswer(index, btn) {
+      clearInterval(timer);
+      const correctIndex = questions[current].answer;
+      const buttons = optionsEl.querySelectorAll("button");
+
+      buttons.forEach((b, i) => {
+        b.disabled = true;
+        if (i === correctIndex) b.classList.add("correct");
+        if (i === index && index !== correctIndex) b.classList.add("wrong");
+      });
+
+      if (index === correctIndex) score++;
+      
+      // Show explanation
+      explanationEl.textContent = questions[current].explanation;
+      explanationEl.classList.remove("hidden");
+
+      setTimeout(() => {
+        current++;
+        showQuestion();
+      }, 2000); // Wait 2 seconds to show feedback
+    }
+
+    function skipQuestion() {
+      clearInterval(timer);
+      current++;
+      showQuestion();
+    }
+
+    function updateProgress() {
+      const progressPercent = ((current + 1) / questions.length) * 100;
+      progressEl.style.width = `${progressPercent}%`;
+    }
+
+    function endQuiz() {
+      quizEl.classList.add("hidden");
+      resultEl.classList.remove("hidden");
+      scoreText.textContent = `Your score: ${score} / ${questions.length} (${((score / questions.length) * 100).toFixed(2)}%)`;
+      localStorage.removeItem("quizProgress");
+    }
+
+    function restartQuiz() {
+      localStorage.removeItem("quizProgress");
+      location.reload();
+    }
+
+    function saveProgress() {
+      const progress = { current, score, questions, selectedSubject };
+      localStorage.setItem("quizProgress", JSON.stringify(progress));
+    }
+
+    function loadProgress() {
+      const saved = localStorage.getItem("quizProgress");
+      if (saved) {
+        const progress = JSON.parse(saved);
+        if (progress.selectedSubject === selectedSubject) {
+          current = progress.current;
+          score = progress.score;
+          questions = progress.questions;
+        }
+      }
+    }
+  </script>
+</body>
+</html>
